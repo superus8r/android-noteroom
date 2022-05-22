@@ -80,4 +80,6 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_version"
     //Room test helpers
     testImplementation "androidx.room:room-testing:$room_version"
+    // Google Truth
+    androidTestImplementation "com.google.truth:truth:$truth_version"
 }
