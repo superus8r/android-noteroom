@@ -3,24 +3,22 @@
 
 package org.kabiri.android.noteroom.ui.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.DismissValue
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Notes
+import androidx.compose.material.rememberDismissState
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -51,99 +49,82 @@ import org.kabiri.android.noteroom.viewmodel.HomeViewModelAbstract
  * SOFTWARE.
  */
 
-private enum class PopupState {
-    Open, Close, Edit
-}
-
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
-    homeViewModel: HomeViewModelAbstract
+    homeViewModel: HomeViewModelAbstract,
+    onClickNote: (NoteEntity) -> Unit,
+    onClickAddNote: () -> Unit,
 ) {
     val noteListState = homeViewModel.noteListFlow.collectAsState(initial = listOf())
     val txtState = rememberSaveable { mutableStateOf("") }
     val noteIdState: MutableState<Long?> = rememberSaveable { mutableStateOf(null) }
-    val popupState = rememberSaveable { mutableStateOf(PopupState.Close) }
 
-    Scaffold {
-        LazyColumn {
-            items(noteListState.value.size) { index ->
-                val note = noteListState.value[index]
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        noteIdState.value = note.roomId
-                        txtState.value = note.text
-                        popupState.value = PopupState.Edit
-                    }
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onLongPress = {
-                                // delete the note on long click
-                                homeViewModel.deleteNote(note)
-                            }
-                        )
-                    }
-                    .height(54.dp)
-                ) {
-                    Text(
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .padding(start = 16.dp, end = 16.dp),
-                        text = note.text,
-                        maxLines = 1,
-                    )
-                    Spacer(
-                        modifier = Modifier
-                            .height(0.5.dp)
-                            .fillMaxWidth()
-                            .background(color = Color.Gray.copy(alpha = 0.54f))
-                            .align(Alignment.BottomCenter)
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(text = stringResource(id = R.string.app_name))
+                },
+                navigationIcon = {
+                    Icon(
+                        modifier = Modifier.padding(start = 8.dp),
+                        imageVector = Icons.Rounded.Notes,
+                        contentDescription = null
                     )
                 }
+            )
+        }
+    ) { contentPadding ->
+        LazyColumn(
+            modifier = Modifier.padding(contentPadding),
+        ) {
+            items(
+                items = noteListState.value,
+                key = { it.roomId ?: "" }
+            ) { note ->
+                val dismissState = rememberDismissState(
+                    confirmStateChange = {
+                        if (it == DismissValue.DismissedToStart ||
+                            it == DismissValue.DismissedToEnd) {
+                            // delete the item from database
+                            homeViewModel.deleteNote(note)
+
+                            return@rememberDismissState true
+                        }
+                        return@rememberDismissState false
+                    }
+                )
+                NoteListItem(
+                    modifier = Modifier.animateItemPlacement(),
+                    onClick = {
+                        noteIdState.value = note.roomId
+                        txtState.value = note.text
+                        homeViewModel.selectNote(note)
+                        onClickNote(note)
+                    },
+                    onDelete = { // delete the note on long click
+                        homeViewModel.deleteNote(note)
+                    },
+                    note = note,
+                    dismissState = dismissState
+                )
             }
-            item {
-                Box(modifier = Modifier.fillMaxWidth()) {
+            item(key = "add_button") {
+                Box(modifier = Modifier
+                    .animateItemPlacement()
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                ) {
                     Button(
                         modifier = Modifier.align(Alignment.Center),
                         onClick = {
-                            popupState.value = PopupState.Open
+                            homeViewModel.resetSelectedNote()
+                            onClickAddNote()
                         }) {
                         Text(text = stringResource(id = R.string.screen_home_button_add_note))
                     }
                 }
-            }
-        }
-
-        when (popupState.value) {
-            PopupState.Open -> {
-                NotePopup(
-                    onClickDismiss = {
-                        popupState.value = PopupState.Close
-                    },
-                    onClickSave = {
-                        homeViewModel.addNote(note = NoteEntity(text = it))
-                        popupState.value = PopupState.Close
-                    }
-                )
-            }
-            PopupState.Edit -> {
-                NotePopup(
-                    txtState = txtState,
-                    onClickDismiss = {
-                        popupState.value = PopupState.Close
-                    },
-                    onClickSave = {
-                        homeViewModel.updateNote(
-                            note = NoteEntity(
-                                roomId = noteIdState.value,
-                                text = it
-                            )
-                        )
-                        popupState.value = PopupState.Close
-                    }
-                )
-            }
-            PopupState.Close -> {
             }
         }
     }
@@ -154,6 +135,8 @@ fun HomeScreen(
 fun PreviewHomeScreen() {
     HomeScreen(
         homeViewModel = object : HomeViewModelAbstract {
+            override val selectedNoteState: State<NoteEntity?>
+                get() = mutableStateOf(null)
             override val noteListFlow: Flow<List<NoteEntity>>
                 get() = flowOf(
                     listOf(
@@ -165,9 +148,13 @@ fun PreviewHomeScreen() {
                     )
                 )
 
-            override fun addNote(note: NoteEntity) {}
+            override fun addOrUpdateNote(note: NoteEntity) {}
             override fun updateNote(note: NoteEntity) {}
             override fun deleteNote(note: NoteEntity) {}
-        }
+            override fun selectNote(note: NoteEntity) {}
+            override fun resetSelectedNote() {}
+        },
+        onClickNote = {},
+        onClickAddNote = {},
     )
 }
