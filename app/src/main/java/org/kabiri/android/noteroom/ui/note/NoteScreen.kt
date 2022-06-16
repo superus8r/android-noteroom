@@ -11,8 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import org.kabiri.android.noteroom.*
 import org.kabiri.android.noteroom.R
 import org.kabiri.android.noteroom.model.NoteEntity
 import org.kabiri.android.noteroom.viewmodel.HomeViewModelAbstract
@@ -51,25 +53,31 @@ fun NoteScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = "edit") },
+                title = { Text(modifier = Modifier.testTag(NOTE_TITLE), text = "edit") },
                 actions = {
-                    IconButton(onClick = {
-                        note?.let {
-                            viewModel.addOrUpdateNote(it.copy(text = txtState.value))
-                        } ?: run {
-                            viewModel.addOrUpdateNote(NoteEntity(text = txtState.value))
-                        }
-                        onClickClose()
-                    }) {
+                    IconButton(
+                        modifier = Modifier.testTag(NOTE_BUTTON_DONE),
+                        onClick = {
+                            note?.let {
+                                viewModel.addOrUpdateNote(it.copy(text = txtState.value))
+                            } ?: run {
+                                viewModel.addOrUpdateNote(NoteEntity(text = txtState.value))
+                            }
+                            onClickClose()
+                        }) {
                         Icon(
                             imageVector = Icons.Rounded.Done,
                             contentDescription = stringResource(
-                                id = R.string.screen_home_popup_button_save)
+                                id = R.string.screen_home_popup_button_save
+                            )
                         )
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onClickClose) {
+                    IconButton(
+                        modifier = Modifier.testTag(NOTE_BUTTON_BACK),
+                        onClick = onClickClose
+                    ) {
                         Icon(
                             imageVector = Icons.Rounded.ArrowBack,
                             contentDescription = stringResource(
@@ -89,6 +97,7 @@ fun NoteScreen(
         ) {
             BasicTextField(
                 modifier = Modifier
+                    .testTag(NOTE_TEXT_FIELD)
                     .padding(start = 16.dp, end = 16.dp, top = 24.dp)
                     .fillMaxWidth()
                     .fillMaxHeight(),
