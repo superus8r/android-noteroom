@@ -3,6 +3,7 @@
 
 package org.kabiri.android.noteroom.ui.home
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,11 +20,15 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import org.kabiri.android.noteroom.HOME_BUTTON_NOTE_ADD
+import org.kabiri.android.noteroom.HOME_ITEM_NOTE
+import org.kabiri.android.noteroom.HOME_TITLE
 import org.kabiri.android.noteroom.R
 import org.kabiri.android.noteroom.model.NoteEntity
 import org.kabiri.android.noteroom.viewmodel.HomeViewModelAbstract
@@ -64,7 +69,8 @@ fun HomeScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(text = stringResource(id = R.string.app_name))
+                    Text(modifier = Modifier.testTag(HOME_TITLE),
+                        text = stringResource(id = R.string.app_name))
                 },
                 navigationIcon = {
                     Icon(
@@ -77,7 +83,9 @@ fun HomeScreen(
         }
     ) { contentPadding ->
         LazyColumn(
-            modifier = Modifier.padding(contentPadding),
+            modifier = Modifier
+                .padding(contentPadding)
+                .animateContentSize(),
         ) {
             items(
                 items = noteListState.value,
@@ -96,7 +104,9 @@ fun HomeScreen(
                     }
                 )
                 NoteListItem(
-                    modifier = Modifier.animateItemPlacement(),
+                    modifier = Modifier
+                        .testTag(HOME_ITEM_NOTE)
+                        .animateItemPlacement(),
                     onClick = {
                         noteIdState.value = note.roomId
                         txtState.value = note.text
@@ -117,7 +127,9 @@ fun HomeScreen(
                     .padding(top = 8.dp)
                 ) {
                     Button(
-                        modifier = Modifier.align(Alignment.Center),
+                        modifier = Modifier
+                            .testTag(HOME_BUTTON_NOTE_ADD)
+                            .align(Alignment.Center),
                         onClick = {
                             homeViewModel.resetSelectedNote()
                             onClickAddNote()
@@ -149,7 +161,6 @@ fun PreviewHomeScreen() {
                 )
 
             override fun addOrUpdateNote(note: NoteEntity) {}
-            override fun updateNote(note: NoteEntity) {}
             override fun deleteNote(note: NoteEntity) {}
             override fun selectNote(note: NoteEntity) {}
             override fun resetSelectedNote() {}

@@ -38,7 +38,6 @@ interface HomeViewModelAbstract {
     val selectedNoteState: State<NoteEntity?>
     val noteListFlow: Flow<List<NoteEntity>>
     fun addOrUpdateNote(note: NoteEntity)
-    fun updateNote(note: NoteEntity)
     fun deleteNote(note: NoteEntity)
     fun selectNote(note: NoteEntity)
     fun resetSelectedNote()
@@ -64,12 +63,6 @@ class HomeViewModel
             } else {
                 noteRepository.update(note = note)
             }
-        }
-    }
-
-    override fun updateNote(note: NoteEntity) {
-        ioScope.launch {
-            noteRepository.update(note = note)
         }
     }
 
